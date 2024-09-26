@@ -1,4 +1,4 @@
-## GPIO Adventures
+## module-2-gpios.py
 
 Hello. For Task 1 of Module 2, I utilized all three components (button, switch, joystick) and had three modes of operation.
 
