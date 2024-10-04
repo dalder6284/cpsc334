@@ -14,3 +14,4 @@ By the way, here's some useful measurements I took using the DAC functions:
 |128 | 1.61V|
 |192 | 2.39V|
 |255 | 3.17V|
+I found a program doing the same thing for these numbers online, but these are the ones for MY ESP32.
