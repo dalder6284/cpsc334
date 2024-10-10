@@ -3,9 +3,9 @@
 
 #define VX_PIN 27
 #define VY_PIN 33
-#define FREEZE 34 // Green
-#define QUEUE 35 // Red
-#define POP 32 // Blue
+#define FREEZE 18 // Green
+#define QUEUE 21 // Blue
+#define POP 5 // Black
 #define SWITCH_PIN 14
 
 #define THIRD 0
@@ -16,15 +16,19 @@
 
 DacESP32 dac1(DAC_CHANNEL_1);
 
-int freezeState;
-int fPressed = 0;
-int frozen = 0;
+int freezeState = HIGH;
+int lastFreezeState = HIGH;
+int fPressed = false;
 
-int popState;
-int pPressed = 0;
+int popState = HIGH;
+int lastPopState = HIGH;
+int pPressed = false;
 
-int queueState;
-int qPressed = 0;
+int queueState = HIGH;
+int lastQueueState = HIGH;
+int qPressed = false;
+
+bool frozen = false;
 
 int vYanalog;
 int vXanalog;
@@ -37,7 +41,7 @@ int stack[STACK_SIZE];
 int stackTop = -1;
 
 int mary[] = {
-  660, 588, 524, 588, 660, 660, 660,
+  660, 660, 660, 588, 524, 588, 660, 660, 660,
   588, 588, 588,
   660, 784, 784,
   660, 588, 524, 588, 660, 660, 660, 660,
@@ -84,31 +88,58 @@ void setup() {
 
 void loop() {
 
+  freezeState = digitalRead(FREEZE);
+  Serial.print(freezeState);
+
+  if (freezeState == LOW && lastFreezeState == HIGH) {
+    fPressed = true;
+  }
+
+  if (fPressed) {
+    frozen = !frozen;
+    fPressed = false;
+  }
+
+  popState = digitalRead(POP);
+  Serial.print(",");
+  Serial.print(popState);
+
+  if (popState == LOW && lastPopState == HIGH) {
+    pPressed = true;
+  }
+
+  if (pPressed) {
+    frozen = true;
+    freq = pop();
+    pPressed = false;
+  }
+
+  queueState = digitalRead(QUEUE);
+  Serial.print(",");
+  Serial.println(queueState);
+
+  if (queueState == LOW && lastQueueState == HIGH) {
+    qPressed = true;
+  }
+
+  if (qPressed) {
+    push(oFreq);
+    qPressed = false;
+  }
+
   // Switch acts as a muting button
   if (!digitalRead(SWITCH_PIN)) {
     dac1.outputCW(1);
   } else {
     
-    vYanalog = analogRead(VY_PIN);
-    freq = map(vYanalog, 0, 4095, 300, 1600);
+    if (!frozen) {
+      vYanalog = analogRead(VY_PIN);
+      freq = map(vYanalog, 0, 4095, 200, 600);
+    }
 
     vXanalog = analogRead(VX_PIN);
     interval = map(vXanalog, 0, 4095, 0, 2);
 
- 
-    plus = 0;
-
-    if(digitalRead(QUEUE)) {
-      plus += 2.0;;
-    }
-
-    if (digitalRead(POP)) {
-      plus += 1.0;
-    }
-
-    if (digitalRead(FREEZE)) {
-      plus *= 3;
-    }
 
     if (interval == THIRD) {
       oFreq = freq * pow(2.0, (4.0 + plus) / 12.0);
@@ -121,18 +152,8 @@ void loop() {
     dac1.outputCW(int(oFreq));
   }
 
-  // queueState = digitalRead(QUEUE);
-  // if (queueState == LOW && !qPressed) {
-  //   qPressed = 1;
-  // } else if (queueState == HIGH){
-  //   qPressed = 0;
-  // }
-
-  // popState = digitalRead(POP);
-  // if (popState == LOW && !pPressed) {
-  //   pPressed = 1;
-  // } else if (popState == HIGH){
-  //   pPressed = 0;
-  // }
+  lastFreezeState = freezeState;
+  lastPopState = popState;
+  lastQueueState = queueState;
 
 }
