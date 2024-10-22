@@ -1,24 +1,33 @@
 import socket 
+import struct
+from pythonosc.udp_client import SimpleUDPClient
 
 host = '0.0.0.0'
-port = 10000
+port = 8090
 
 
-server_socket = socket.socket()
-server_socket.bind((host, port))
-server_socket.listen(0)
+sc_ip = "127.0.0.1"
+sc_port = 57120
+sc_client = SimpleUDPClient(sc_ip, sc_port)
 
-print(f"Listening on {host}:{port}")
-
+s = socket.socket()
+s.bind((host, port))
+s.listen(0)
+print(f"Listening on {host}:{port}.")
 while True:
-    client_socket, addr = server_socket.accept()
-    print(f"Connection from {addr}")
+    client, addr = s.accept()
     
-    while True:
-        data = client_socket.recv(1024)
-        if not data:
-            break
-        print(f"Received {data}")
-    
-    client_socket.close()
-    print(f"Connection closed from {addr}")
+    with client:
+        print(f"Connected to {addr}.")
+        while True:
+            data = client.recv(26)
+            if len(data) != 0:
+                fh = struct.unpack('ffffffh', data)
+                print(f"Received data: {fh}")
+                sc_client.send_message("/data", fh)
+            else:
+                print("Connection closed.")
+                break
+            
+        
+        
