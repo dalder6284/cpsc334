@@ -10,7 +10,8 @@
 #include <Wire.h>
 #include <WiFi.h>
 
-#define SPONGE 4
+#define SPONGE 34
+#define LED 17
 
 // MPU-6050
 Adafruit_MPU6050 mpu;
@@ -34,10 +35,23 @@ WiFiClient client;
 
 const char* ssid = "yale wireless";
 const uint16_t port = 8090;
-const char* host = "10.75.74.230";
+const char* host = "10.66.219.177";
 
+void blinkLed(int times) {
+
+  int tdelay = int(1000 / times);
+
+  for (int i = 0; i < times; i++) { 
+    digitalWrite(LED, HIGH);
+    delay(tdelay);
+    digitalWrite(LED, LOW);
+    delay(tdelay);
+  }
+}
 
 void setup(void) {
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, LOW);
 
   // SERIAL
   Serial.begin(115200);
@@ -62,8 +76,8 @@ void setup(void) {
   Serial.println("Connecting to WiFi...");
   WiFi.begin(ssid, "");
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
     Serial.println("...");
+    blinkLed(3);
   }
 
   Serial.print("WiFi connected with IP: ");
@@ -77,14 +91,19 @@ void setup(void) {
     }
 
     Serial.println("Connection to host failed.");
-    delay(1000);
+    blinkLed(3);
   }
 
   Serial.println("");
 }
 
 void loop() {
+  uint16_t x = analogRead(SPONGE);
+  Serial.println(x);
   if (client.connected()) {
+    digitalWrite(LED, HIGH);
+    packet.sponge = x;
+
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
 
@@ -96,7 +115,6 @@ void loop() {
     packet.gy = g.gyro.y;
     packet.gz = g.gyro.z;
     
-    packet.sponge = analogRead(SPONGE);
 
     client.write((uint8_t*)&packet, sizeof(packet));
     // Serial.println("Packet sent.");
@@ -112,7 +130,7 @@ void loop() {
     }
 
     Serial.println("Connection to host failed. Retrying.");
-    delay(1000);
+    blinkLed(3);
   }
 
 }
