@@ -2,57 +2,121 @@ import socket
 import struct
 import select
 import time
+from pythonosc.udp_client import SimpleUDPClient
+
+sc_ip = "127.0.0.1"
+sc_port = 57120
+sc_client = SimpleUDPClient(sc_ip, sc_port)
+
+mostRecentChange = time.time()
+mostRecentChill = time.time()
+curr = "N1"
+
+def moveUp():
+    global curr
+    global mostRecentChange
+    if curr == "B1":
+        curr = "M1"
+    elif curr == "N1":
+        curr = "M1"
+    elif curr == "M1":
+        curr = "M2"
+    elif curr == "M2":
+        curr = "M3"
+    
+def moveDown():
+    global curr
+    global mostRecentChange
+    if curr == "M1":
+        curr = "N1"
+    elif curr == "M2":
+        curr = "M1"
+    elif curr == "M3":
+        curr = "M2"
+
+def parse_data(data):
+    global curr
+    global mostRecentChange
+    ax, ay, az, gx, gy, gz, sponge = data
+    onside = (ay < 9.0) and (ay > -5)
+    usd = (ay < -8)
+    shaken = (abs(gx) > 2.5) or (abs(gy) > 2.5) or (abs(gz) > 2.5)
+    cool = not (onside or usd or shaken or sponge > 1400)
+    
+    if curr == "B1" and 0 < sponge < 1400:
+        return
+    
+    now = time.time()
+    if (now - mostRecentChange > 10):
+        mostRecentChange = time.time()
+        if sponge > 0 and sponge < 1400 and curr == "N1":
+            curr = "B1"
+            
+            sc_client.send_message("/data", curr)
+            return
+        
+        if sponge == 0 and curr == "B1":
+            curr = "N1"
+            
+        if usd:
+            curr = "M3"
+        elif onside or shaken:
+            moveUp()
+        elif sponge > 1400:
+            moveUp()
+        elif cool:
+            moveDown()
+            
+        sc_client.send_message("/data", curr)
 
 def start_server(host='0.0.0.0', port=8090, timeout=20):
-    # Create a TCP/IP socket
+    global curr
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((host, port))
     server_socket.listen()
     print(f"[LISTENING] Server is listening on {host}:{port}")
 
-    # Dictionary to keep track of connected sockets and their last activity time
     clients = {}
     
     try:
         while True:
-            # Use select to wait for I/O events
             read_sockets, _, _ = select.select([server_socket] + list(clients.keys()), [], [])
 
-            # Check for timeouts
             current_time = time.time()
             for sock in list(clients.keys()):
                 if current_time - clients[sock] > timeout:
                     print(f"[TIMEOUT] {sock.getpeername()} has timed out.")
-                    sock.close()  # Close the socket
-                    del clients[sock]  # Remove the client from the list
+                    sock.close()
+                    del clients[sock]
 
             for sock in read_sockets:
-                # If the server socket is readable, it means there's a new connection
                 if sock is server_socket:
                     client_socket, addr = server_socket.accept()
-                    clients[client_socket] = current_time  # Initialize last activity time
+                    clients[client_socket] = current_time
                     print(f"[NEW CONNECTION] {addr} connected.")
                 else:
-                    # If a client socket is readable, it may have sent data
                     try:
                         data = sock.recv(1024)
                         if data:
-                            # Print the received data from the client
-                            print(f"[RECEIVED] {struct.unpack('ffffffh', data)} from {sock.getpeername()}")
-                            clients[sock] = current_time  # Update last activity time
+                            if len(data) == 26:
+                                unpacked_data = struct.unpack('ffffffh', data)
+                                print(f"[RECEIVED] {unpacked_data} from {sock.getpeername()}")
+                                parse_data(unpacked_data)
+                                clients[sock] = current_time
+                            else:
+                                raise ConnectionResetError
                         else:
-                            # No data means the client has disconnected
                             raise ConnectionResetError
                     except (ConnectionResetError, BrokenPipeError):
                         print(f"[DISCONNECTED] {sock.getpeername()} disconnected.")
-                        sock.close()  # Clean up the socket
-                        del clients[sock]  # Remove the disconnected client from the list
+                        sock.close()
+                        del clients[sock]
 
     except KeyboardInterrupt:
         print("[SHUTTING DOWN] Server is shutting down.")
     finally:
-        server_socket.close()  # Ensure the server socket is closed on shutdown
+        server_socket.close()
 
 if __name__ == "__main__":
     start_server()

@@ -35,7 +35,7 @@ WiFiClient client;
 
 const char* ssid = "yale wireless";
 const uint16_t port = 8090;
-const char* host = "10.66.219.177";
+const char* host = "10.67.76.238";
 
 void blinkLed(int times) {
 
