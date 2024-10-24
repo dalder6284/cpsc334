@@ -37,19 +37,20 @@ def moveDown():
 def parse_data(data):
     global curr
     global mostRecentChange
+    limit = 800
     ax, ay, az, gx, gy, gz, sponge = data
     onside = (ay < 9.0) and (ay > -5)
     usd = (ay < -8)
     shaken = (abs(gx) > 2.5) or (abs(gy) > 2.5) or (abs(gz) > 2.5)
-    cool = not (onside or usd or shaken or sponge > 1400)
+    cool = not (onside or usd or shaken or sponge > limit)
     
-    if curr == "B1" and 0 < sponge < 1400:
+    if curr == "B1" and 0 < sponge < limit:
         return
     
     now = time.time()
     if (now - mostRecentChange > 10):
         mostRecentChange = time.time()
-        if sponge > 0 and sponge < 1400 and curr == "N1":
+        if sponge > 0 and sponge < limit and curr == "N1":
             curr = "B1"
             
             sc_client.send_message("/data", curr)
@@ -62,7 +63,7 @@ def parse_data(data):
             curr = "M3"
         elif onside or shaken:
             moveUp()
-        elif sponge > 1400:
+        elif sponge > limit:
             moveUp()
         elif cool:
             moveDown()
