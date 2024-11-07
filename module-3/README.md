@@ -15,8 +15,6 @@ That’s the idea, anyways. The atmosphere of the room (the music playing) shoul
 
 ## The Specifics
 
-![bookloo1.JPEG](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f8eac1a-2aff-44f8-b0b1-62b2e83539ad/14fd77a9-05a1-497a-a9a1-6f0a9cd38f67/bookloo1.jpeg)
-
 There’s five specific things that need to be discussed about the project: the enclosure, the ESP32 code, the Python script on the server that connects to the ESP32, the Supercollider code that plays the music, and the Raspberry Pi. All code can be found on my [Github](https://github.com/dalder6284/cpsc334/tree/main/module-3) in Module 3.
 
 ### The Enclosure and the Sponge Sensor
@@ -161,4 +159,4 @@ For future versions, I think setting up the ESP32 as the server instead of the c
 
 ### Video
 
-(coming soon…)
+[Here.](https://www.youtube.com/watch?v=Vz2a4LvKhGc)
