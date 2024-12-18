@@ -18,7 +18,7 @@ PImage pic;
 void setup() {
   background(255,255,255);
   
-  String path = dataPath(imgs);
+  /*String path = dataPath(imgs);
   File fp = new File(path);
   String[] lst = fp.list();
   
@@ -27,7 +27,7 @@ void setup() {
     pic = loadImage(fn);
     pic.loadPixels();
     println(fn);
-  }
+  }*/
 }
 
 int padding = 3;
