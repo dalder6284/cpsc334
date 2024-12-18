@@ -220,33 +220,16 @@ const uint8_t TARGET_MAC[] = {0x48, 0xe7, 0x29, 0x3f, 0x38, 0x60};
 
 // Callback called when a new peer is found
 void register_new_peer(const esp_now_recv_info_t *info, const uint8_t *data, int len, void *arg) {
-  if (memcmp(info->src_addr, TARGET_MAC, ESP_NOW_ETH_ALEN) == 0) {
-    esp_now_data_t *msg = (esp_now_data_t *)data;
-    int priority = msg->priority;
+  esp_now_data_t *msg = (esp_now_data_t *)data;
 
-    if (priority == self_priority) {
-      Serial.println("ERROR! Device has the same priority as this device. Unsupported behavior.");
-      fail_reboot();
-    }
-
-    if (current_peer_count < ESPNOW_PEER_COUNT) {
-      Serial.printf("New peer found: " MACSTR " with priority %d\n", MAC2STR(info->src_addr), priority);
-      ESP_NOW_Network_Peer *new_peer = new ESP_NOW_Network_Peer(info->src_addr, priority);
-      if (new_peer == nullptr || !new_peer->begin()) {
-        Serial.println("Failed to create or register the new peer");
-        delete new_peer;
-        return;
-      }
-      peers.push_back(new_peer);
-      current_peer_count++;
-      if (current_peer_count == ESPNOW_PEER_COUNT) {
-        Serial.println("All peers have been found");
-        new_msg.ready = true;
-      }
-    }
-  } else {
-    Serial.printf("DENIED: " MACSTR "\n", MAC2STR(info->src_addr));
+  Serial.printf("New peer found: " MACSTR " with priority %d\n", MAC2STR(info->src_addr), priority);
+  ESP_NOW_Network_Peer *new_peer = new ESP_NOW_Network_Peer(info->src_addr, priority);
+  if (new_peer == nullptr || !new_peer->begin()) {
+    Serial.println("Failed to create or register the new peer");
+    delete new_peer;
+    return;
   }
+  peers.push_back(new_peer);
 }
 
 /* Main */
@@ -254,10 +237,7 @@ void register_new_peer(const esp_now_recv_info_t *info, const uint8_t *data, int
 void setup() {
   uint8_t self_mac[6];
 
-  Serial.begin(115200);
-  while (!Serial) {
-    delay(10);
-  }
+  
 
   // Initialize the Wi-Fi module
   WiFi.mode(WIFI_STA);
